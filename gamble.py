@@ -1,9 +1,13 @@
 import statsapi
 import requests
+import json
+import datetime
 
 def get_first_inning_stats(team_id):
-    """Fetch first-inning run statistics for a given team."""
-    team_stats = statsapi.team_stats(teamId=team_id, group="hitting", type="season")
+
+    # Get last season's stats - we can get more useful data here but keeping it simple
+    team_stats = statsapi.get('teams_stats',{'sportIds':1,"stats":"season", "teamId":team_id, "group":"hitting", "season":str(datetime.datetime.now().year-1)})
+    print(team_stats)
     first_inning_runs = next((s['value'] for s in team_stats['stats'] if s['displayName'] == "Runs in First Inning"), 0)
     total_games = next((s['value'] for s in team_stats['stats'] if s['displayName'] == "Games Played"), 1)
     
@@ -20,7 +24,8 @@ def get_team_id(team_name):
 def get_pitcher_performance(pitcher_id, opponent_id):
     """Fetch historical performance of the pitcher against the given team."""
     stats = statsapi.player_stats(pitcher_id, group="pitching", type="career")
-    opponent_stats = next((s for s in stats['stats'] if s['group'] == "pitching" and s['type'] == "career" and s['teamId'] == opponent_id), None)
+    print(stats)
+    opponent_stats = next((s for s in stats.get('stats') if s.get('group') == "pitching" and s.get('type') == "career" and s.get('teamId') == opponent_id), None)
     
     if opponent_stats:
         era = opponent_stats.get('era', 4.00)  # Default average ERA if not found
@@ -64,10 +69,49 @@ def calculate_no_run_probability(team1, team2, pitcher1, pitcher2, location):
     no_run_prob = t1_prob * t2_prob * p1_prob * p2_prob * weather_factor
     print(f"Probability of a scoreless first inning between {team1} and {team2}: {no_run_prob:.2%}")
 
+
 if __name__ == "__main__":
+    """
     team1 = input("Enter first team name: ")
     team2 = input("Enter second team name: ")
     pitcher1 = int(input("Enter first team's starting pitcher ID: "))
     pitcher2 = int(input("Enter second team's starting pitcher ID: "))
     location = input("Enter game location: ")
     calculate_no_run_probability(team1, team2, pitcher1, pitcher2, location)
+    """
+    """
+    p_name = input("Enter pitcher name: ")
+    t_name = input("Enter team name: ")
+    t_id = get_team_id(t_name)
+    players = statsapi.get('sports_players', {'sportId':1,'season':2023})
+    for player in players.get('people'):
+        if p_name.lower() in player.get('fullName').lower():
+            print(get_pitcher_performance(player['id'], t_id))
+    """
+    #games = statsapi.schedule(start_date='07/01/2018',end_date='07/09/2018',team=143,opponent=121)
+    #gamets = statsapi.get('game_timestamps',{'gamePk':530769})
+    #gamebox = statsapi.boxscore(530769,battingInfo=False,fieldingInfo=False,pitchingBox=False,gameInfo=False)
+
+    game_id = input("Enter game id (leave blank to enter game details): ")
+    team1 = ''
+    team2 = ''
+    date = ''
+
+    if game_id == '':
+        team1 = input("Enter home team: ")
+        team2 = input("Enter away team: ")
+        date = input("Enter date (YYYY-MM-DD): ")
+        game_id = 
+
+    gameline = statsapi.linescore(530769)
+    print(gameline)
+
+    gameline_array = gameline.split('\n')
+
+    team1_runs = [r for r in gameline_array[1].split(' ') if r.strip()]
+    team2_runs = [r for r in gameline_array[2].split(' ') if r.strip()]
+
+    if int(team1_runs[1]) + int(team2_runs[1]) > 0:
+        print("YES RUN FIRST INNING")
+    else:
+        print("NO RUN FIRST INNING")
