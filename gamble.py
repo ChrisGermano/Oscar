@@ -36,7 +36,7 @@ def get_pitcher_performance(pitcher_id, opponent_id):
 
 def get_weather_factor(location):
     """Fetch weather conditions and return a factor affecting the probability."""
-    url = f"https://wttr.in/{location}?format=%C"
+    url = "https://wttr.in/" + location + "?format=%C"
     response = requests.get(url)
     if response.status_code == 200:
         conditions = response.text.lower()
@@ -67,8 +67,17 @@ def calculate_no_run_probability(team1, team2, pitcher1, pitcher2, location):
     weather_factor = get_weather_factor(location)
     
     no_run_prob = t1_prob * t2_prob * p1_prob * p2_prob * weather_factor
-    print(f"Probability of a scoreless first inning between {team1} and {team2}: {no_run_prob:.2%}")
+    print("Probability of a scoreless first inning between " + team1 + " and " + team2 + ": " + no_run_prob)
 
+def get_game_id(team1, team2, game_date):
+    games = statsapi.schedule(start_date=game_date, end_date=game_date)
+
+    for game in games:
+        if (team1.lower() in game['away_name'].lower() and team2.lower() in game['home_name'].lower()) or \
+           (team2.lower() in game['away_name'].lower() and team1.lower() in game['home_name'].lower()):
+            return game['game_id']
+    
+    return None
 
 if __name__ == "__main__":
     """
@@ -96,14 +105,14 @@ if __name__ == "__main__":
     team1 = ''
     team2 = ''
     date = ''
-
-    if game_id == '':
+    
+    if game_id == '' or game_id == None:
         team1 = input("Enter home team: ")
         team2 = input("Enter away team: ")
         date = input("Enter date (YYYY-MM-DD): ")
-        game_id = 
-
-    gameline = statsapi.linescore(530769)
+        game_id = get_game_id(team1, team2, date)
+    
+    gameline = statsapi.linescore(game_id)
     print(gameline)
 
     gameline_array = gameline.split('\n')
