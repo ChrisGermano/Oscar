@@ -2,8 +2,9 @@ import statsapi
 import requests
 import json
 import datetime
-from meteostat import Daily, Point
-from geopy.geocoders import Nominatim
+#from meteostat import Daily, Point
+#from geopy.geocoders import Nominatim
+import sys
 
 def get_team_id(team_name):
     """Retrieve team ID based on the team name."""
@@ -13,6 +14,7 @@ def get_team_id(team_name):
             return team['id']
     return None
 
+'''
 def get_weather_factor(location):
     geolocator = Nominatim(user_agent="weather_lookup")
     location = geolocator.geocode(city)
@@ -29,16 +31,19 @@ def get_weather_factor(location):
         "precipitation": data["prcp"].values[0] if "prcp" in data else None
     }
     return weather_info
+'''
 
 def get_game_id(team1, team2, game_date):
-    games = statsapi.schedule(start_date=game_date, end_date=game_date)
+    try:
+        games = statsapi.schedule(start_date=game_date, end_date=game_date)
 
-    for game in games:
-        if (team1.lower() in game['away_name'].lower() and team2.lower() in game['home_name'].lower()) or \
-           (team2.lower() in game['away_name'].lower() and team1.lower() in game['home_name'].lower()):
-            return game['game_id']
-    
-    return None
+        for game in games:
+            if (team1.lower() in game['away_name'].lower() and team2.lower() in game['home_name'].lower()) or \
+               (team2.lower() in game['away_name'].lower() and team1.lower() in game['home_name'].lower()):
+                return game['game_id']
+    except:
+        return None
+
 
 if __name__ == "__main__":
     """
@@ -62,10 +67,16 @@ if __name__ == "__main__":
     #gamets = statsapi.get('game_timestamps',{'gamePk':530769})
     #gamebox = statsapi.boxscore(530769,battingInfo=False,fieldingInfo=False,pitchingBox=False,gameInfo=False)
 
-    game_id = input("Enter game id (leave blank to enter game details): ")
+    game_id = ''
     team1 = ''
     team2 = ''
     date = ''
+
+    if len(sys.argv) > 1:
+        game_id = int(sys.argv[1])
+
+    if game_id == '':
+        game_id = input("Enter game id (leave blank to enter game details): ")
     
     if game_id == '' or game_id == None:
         team1 = input("Enter home team: ")
@@ -73,15 +84,19 @@ if __name__ == "__main__":
         date = input("Enter date (YYYY-MM-DD): ")
         game_id = get_game_id(team1, team2, date)
     
-    gameline = statsapi.linescore(game_id)
-    print(gameline)
 
-    gameline_array = gameline.split('\n')
+    if isinstance(game_id, int):
+        gameline = statsapi.linescore(game_id)
+        print(gameline)
 
-    team1_runs = [r for r in gameline_array[1].split(' ') if r.strip()]
-    team2_runs = [r for r in gameline_array[2].split(' ') if r.strip()]
+        gameline_array = gameline.split('\n')
 
-    if int(team1_runs[1]) + int(team2_runs[1]) > 0:
-        print("YES RUN FIRST INNING")
+        team1_runs = [r for r in gameline_array[1].split(' ') if r.strip()]
+        team2_runs = [r for r in gameline_array[2].split(' ') if r.strip()]
+
+        if int(team1_runs[1]) + int(team2_runs[1]) > 0:
+            print("YES RUN FIRST INNING")
+        else:
+            print("NO RUN FIRST INNING")
     else:
-        print("NO RUN FIRST INNING")
+        print("INVALID GAME ID")
